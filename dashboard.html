@@ -346,11 +346,28 @@
 
 </div>
 
-<!-- data.js defines window.EXPENSE_DATA and window.EXPENSE_CONFIG. Loaded as a
-     plain script tag (not fetch) so this page works straight from file://. -->
-<script src="data.js"></script>
+<!-- data.js, if present next to this file, sets window.EXPENSE_DATA /
+     EXPENSE_CONFIG synchronously (local/offline use). It's optional —
+     a missing file here is a harmless 404, and the script below falls
+     back to fetching /api/data (Vercel deploy) or sample data. -->
+<script src="data.js" onerror="void 0"></script>
 <script>
-(function(){
+(async function(){
+
+  /* When deployed on Vercel, the bot writes to Supabase directly and this
+     page has no credentials of its own — it fetches the same shape via
+     /api/data instead of loading a locally-generated data.js. Local
+     file:// usage (data.js present) still works unchanged. */
+  if (!window.EXPENSE_DATA) {
+    try {
+      var res = await fetch('/api/data');
+      if (res.ok) {
+        var payload = await res.json();
+        window.EXPENSE_DATA = payload.data;
+        window.EXPENSE_CONFIG = payload.config;
+      }
+    } catch (e) { /* file:// or offline — fall through to sample data */ }
+  }
 
   /* ===================== sample data (fallback) ===================== */
   function buildSampleData(){
