@@ -12,9 +12,15 @@
     "rent": 12000,
     "bills": 3000,
     "luxuries": 3000,
+    "subscriptions": 1000,
+    "entertainment": 2000,
+    "insurance": 2000,
+    "emi": 0,
     "investments": 0,
     "health": 2000,
     "education": 2000,
+    "personal_care": 1000,
+    "gifts": 1000,
     "other": 2000
   }
 }

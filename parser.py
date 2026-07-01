@@ -49,13 +49,26 @@ CATEGORY_KEYWORDS = {
     "bills": [
         "electricity", "wifi", "broadband", "recharge", "mobile bill",
         "phone bill", "gas bill", "water bill", "dth", "jio", "airtel",
-        "vi bill", "bill", "emi", "insurance premium",
+        "vi bill", "bill",
     ],
     "luxuries": [
-        "netflix", "prime video", "hotstar", "spotify", "gym", "movie",
-        "pvr", "inox", "bookmyshow", "concert", "party", "club", "bar",
-        "alcohol", "beer", "wine", "cigarette", "vacation", "trip",
-        "shopping spree", "gadget", "gaming",
+        "vacation", "trip", "shopping spree", "gadget",
+    ],
+    "subscriptions": [
+        "netflix", "prime video", "hotstar", "spotify", "gym", "gym membership",
+        "apple music", "youtube premium", "icloud", "google one", "jio cinema",
+        "subscription",
+    ],
+    "entertainment": [
+        "movie", "pvr", "inox", "bookmyshow", "concert", "party", "club",
+        "bar", "alcohol", "beer", "wine", "cigarette", "gaming",
+    ],
+    "insurance": [
+        "insurance", "insurance premium", "lic", "policy premium",
+    ],
+    "emi": [
+        "emi", "loan", "personal loan", "home loan", "car loan",
+        "credit card bill",
     ],
     "investments": [
         "sip", "etf", "stocks", "mutual fund", "mf", "nps", "ppf", "fd",
@@ -70,6 +83,13 @@ CATEGORY_KEYWORDS = {
     "education": [
         "course", "udemy", "coursera", "tuition", "fees", "books", "exam",
         "school", "college", "education", "class", "workshop",
+    ],
+    "personal_care": [
+        "salon", "haircut", "spa", "parlour", "parlor", "cosmetics",
+        "skincare", "makeup", "grooming",
+    ],
+    "gifts": [
+        "gift", "gifting", "present", "donation", "charity",
     ],
 }
 

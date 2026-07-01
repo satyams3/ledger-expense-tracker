@@ -26,9 +26,15 @@
     --c-rent:#6fa8dc;
     --c-bills:#b0b8a8;
     --c-luxuries:#e2584f;
+    --c-subscriptions:#b585d6;
+    --c-entertainment:#e0954f;
+    --c-insurance:#7a92c2;
+    --c-emi:#a85c5c;
     --c-investments:#5fd787;
     --c-health:#7fd1c7;
     --c-education:#9aa7d6;
+    --c-personal_care:#e39ec2;
+    --c-gifts:#e8d16b;
     --c-other:#6b7464;
 
     --mono: 'JetBrains Mono','IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;
@@ -528,10 +534,14 @@
 
   var CAT_LABELS = {
     travel:'Travel', food:'Food', groceries:'Groceries', clothes:'Clothes',
-    rent:'Rent', bills:'Bills', luxuries:'Luxuries', investments:'Investments',
-    health:'Health', education:'Education', other:'Other'
+    rent:'Rent', bills:'Bills', luxuries:'Luxuries', subscriptions:'Subscriptions',
+    entertainment:'Entertainment', insurance:'Insurance', emi:'EMI/Loans',
+    investments:'Investments', health:'Health', education:'Education',
+    personal_care:'Personal Care', gifts:'Gifts', other:'Other'
   };
-  var CAT_ORDER = ['travel','food','groceries','clothes','rent','bills','luxuries','investments','health','education','other'];
+  var CAT_ORDER = ['travel','food','groceries','clothes','rent','bills','luxuries',
+    'subscriptions','entertainment','insurance','emi','investments','health',
+    'education','personal_care','gifts','other'];
 
   function catColor(cat){
     var el = document.createElement('div');
