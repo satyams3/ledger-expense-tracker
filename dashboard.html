@@ -360,7 +360,7 @@
      file:// usage (data.js present) still works unchanged. */
   if (!window.EXPENSE_DATA) {
     try {
-      var res = await fetch('/api/data');
+      var res = await fetch('/api/data', {cache: 'no-store'});
       if (res.ok) {
         var payload = await res.json();
         window.EXPENSE_DATA = payload.data;
