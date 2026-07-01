@@ -255,6 +255,13 @@
   .activity-amt{font-variant-numeric:tabular-nums;font-weight:600;}
   .activity-amt.income{color:var(--green);}
   .activity-date{color:var(--text-muted);font-size:11px;min-width:70px;text-align:right;}
+  .activity-actions{display:flex;gap:4px;}
+  .activity-actions button{
+    background:none;border:1px solid var(--border);color:var(--text-muted);
+    font-family:var(--mono);font-size:11px;border-radius:3px;padding:2px 7px;cursor:pointer;
+  }
+  .activity-actions button:hover{color:var(--text-bright);border-color:var(--text-muted);}
+  .activity-actions button.del:hover{color:var(--red);border-color:var(--red);}
 
   /* insights */
   .insight-line{
@@ -782,6 +789,11 @@
     var html = sorted.map(function(r){
       var isIncome = r.type === 'income';
       var dateShort = r.date.slice(5).split('-').reverse().join('/');
+      var actions = IS_SAMPLE ? '' :
+        '<span class="activity-actions">'
+        + '<button type="button" data-act="edit" data-id="'+r.id+'">edit</button>'
+        + '<button type="button" class="del" data-act="del" data-id="'+r.id+'">del</button>'
+        + '</span>';
       return '<div class="activity-row">'
         + '<div class="activity-left">'
         + '<span class="activity-cat">'+(CAT_LABELS[r.category]||r.category)+'</span>'
@@ -790,6 +802,7 @@
         + '<div style="display:flex;align-items:center;gap:14px;">'
         + '<span class="activity-amt'+(isIncome?' income':'')+'">'+(isIncome?'+':'-')+money(r.amount)+'</span>'
         + '<span class="activity-date">'+dateShort+'</span>'
+        + actions
         + '</div>'
         + '</div>';
     }).join('');
@@ -864,6 +877,49 @@
       return '<div class="insight-line"><span class="arrow">›</span><span>'+l.html+'</span></div>';
     }).join('');
   }
+
+  /* ===================== edit / delete ===================== */
+  async function refreshAndRerender(){
+    try {
+      var res = await fetch('/api/data', {cache: 'no-store'});
+      if (res.ok){
+        var payload = await res.json();
+        DATA.length = 0;
+        Array.prototype.push.apply(DATA, payload.data);
+      }
+    } catch (e) { /* ignore, re-render with whatever we have */ }
+    render(picker.value);
+  }
+
+  document.getElementById('activityBox').addEventListener('click', async function(ev){
+    var btn = ev.target.closest('button[data-act]');
+    if (!btn) return;
+    var id = btn.getAttribute('data-id');
+    var row = DATA.find(function(r){ return String(r.id) === id; });
+    if (!row) return;
+
+    if (btn.getAttribute('data-act') === 'del'){
+      if (!confirm('Delete "'+(row.note||row.category)+'" for '+money(row.amount)+'?')) return;
+      await fetch('/api/txn?id='+id, {method:'DELETE'});
+      refreshAndRerender();
+      return;
+    }
+
+    if (btn.getAttribute('data-act') === 'edit'){
+      var newAmount = prompt('Amount', row.amount);
+      if (newAmount === null) return;
+      var newCategory = prompt('Category ('+CAT_ORDER.join(', ')+')', row.category);
+      if (newCategory === null) return;
+      var newNote = prompt('Note', row.note || '');
+      if (newNote === null) return;
+      await fetch('/api/txn?id='+id, {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({amount: parseFloat(newAmount), category: newCategory.trim(), note: newNote})
+      });
+      refreshAndRerender();
+    }
+  });
 
   /* ===================== boot ===================== */
   resolveColors();

@@ -73,6 +73,22 @@ def add(amount, category, note, type="expense", chat_id=None,
     return result.data[0]["id"]
 
 
+def update(txn_id, db_path=None, **fields):
+    """Patch a transaction's amount/category/note/type/date by id."""
+    allowed = {"amount", "category", "note", "type", "date"}
+    patch = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not patch:
+        return
+    client = _get_client()
+    client.table("txns").update(patch).eq("id", txn_id).execute()
+
+
+def delete(txn_id, db_path=None):
+    """Delete a transaction by id."""
+    client = _get_client()
+    client.table("txns").delete().eq("id", txn_id).execute()
+
+
 def undo_last(chat_id=None, db_path=None):
     """Delete the most recently added row (optionally scoped to a chat).
 
