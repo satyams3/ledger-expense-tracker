@@ -145,6 +145,66 @@ def category_totals(month, db_path=None, type="expense"):
     return dict(sorted(totals.items(), key=lambda kv: kv[1], reverse=True))
 
 
+def add_recurring(amount, category, note, day_of_month, type="expense", chat_id=None):
+    """Register a recurring transaction. Returns the new rule's id."""
+    client = _get_client()
+    result = client.table("recurring").insert({
+        "amount": amount,
+        "category": category,
+        "note": note,
+        "type": type,
+        "day_of_month": day_of_month,
+        "chat_id": chat_id,
+        "active": True,
+    }).execute()
+    return result.data[0]["id"]
+
+
+def list_recurring():
+    """All active recurring rules."""
+    client = _get_client()
+    result = (
+        client.table("recurring")
+        .select("*")
+        .eq("active", True)
+        .order("day_of_month")
+        .execute()
+    )
+    return result.data
+
+
+def delete_recurring(rule_id):
+    client = _get_client()
+    client.table("recurring").delete().eq("id", rule_id).execute()
+
+
+def run_due_recurring(today=None):
+    """Insert a txn for every active rule due today that hasn't already run
+    this month. Returns the list of txns inserted. Safe to call more than
+    once a day — last_run prevents double-logging.
+    """
+    today = today or date.today()
+    this_month = today.isoformat()[:7]
+    inserted = []
+    for rule in list_recurring():
+        if rule["day_of_month"] != today.day:
+            continue
+        if rule.get("last_run") == this_month:
+            continue
+        txn_id = add(
+            amount=rule["amount"],
+            category=rule["category"],
+            note=rule["note"],
+            type=rule["type"],
+            chat_id=rule["chat_id"],
+            txn_date=today.isoformat(),
+        )
+        client = _get_client()
+        client.table("recurring").update({"last_run": this_month}).eq("id", rule["id"]).execute()
+        inserted.append({"txn_id": txn_id, "rule_id": rule["id"], "amount": rule["amount"], "category": rule["category"]})
+    return inserted
+
+
 if __name__ == "__main__":
     add(500, "travel", "Ola", "expense", chat_id=1)
     add(420, "food", "Swiggy Dinner", "expense", chat_id=1)

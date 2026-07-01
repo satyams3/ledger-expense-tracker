@@ -1,9 +1,9 @@
 """
-api/txn.py — create / edit / delete a transaction, called from the dashboard.
+api/recurring.py — manage recurring transaction rules, called from the dashboard.
 
-POST   /api/txn        body: {"amount": 600, "category": "food", "note": "..."}
-PATCH  /api/txn?id=5   body: {"amount": 600, "category": "food", "note": "..."}
-DELETE /api/txn?id=5
+GET    /api/recurring        list active rules
+POST   /api/recurring        body: {"amount", "category", "note", "type", "day_of_month"}
+DELETE /api/recurring?id=5
 """
 
 import json
@@ -17,16 +17,12 @@ import db
 
 
 class handler(BaseHTTPRequestHandler):
-    def _txn_id(self):
-        qs = parse_qs(urlparse(self.path).query)
-        return int(qs["id"][0])
-
-    def _ok(self):
+    def _ok(self, payload=None):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(b'{"ok": true}')
+        self.wfile.write(json.dumps(payload if payload is not None else {"ok": True}).encode("utf-8"))
 
     def _error(self, message, status=400):
         self.send_response(status)
@@ -34,36 +30,31 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps({"ok": False, "error": message}).encode("utf-8"))
 
+    def do_GET(self):
+        self._ok({"rules": db.list_recurring()})
+
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(length) or b"{}")
-        if "amount" not in body or "category" not in body:
-            self._error("amount and category are required")
+        required = {"amount", "category", "day_of_month"}
+        if not required.issubset(body):
+            self._error("amount, category, and day_of_month are required")
             return
-        db.add(
+        rule_id = db.add_recurring(
             amount=body["amount"],
             category=body["category"],
             note=body.get("note"),
+            day_of_month=int(body["day_of_month"]),
             type=body.get("type", "expense"),
         )
-        self._ok()
-
-    def do_PATCH(self):
-        try:
-            txn_id = self._txn_id()
-        except (KeyError, ValueError):
-            self._error("missing or invalid id")
-            return
-        length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length) or b"{}")
-        db.update(txn_id, **body)
-        self._ok()
+        self._ok({"ok": True, "id": rule_id})
 
     def do_DELETE(self):
+        qs = parse_qs(urlparse(self.path).query)
         try:
-            txn_id = self._txn_id()
+            rule_id = int(qs["id"][0])
         except (KeyError, ValueError):
             self._error("missing or invalid id")
             return
-        db.delete(txn_id)
+        db.delete_recurring(rule_id)
         self._ok()

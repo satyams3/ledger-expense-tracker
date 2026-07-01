@@ -114,6 +114,32 @@
     padding:7px 10px;
     border-radius:3px;
   }
+  .inline-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .inline-form input{
+    background:var(--panel);color:var(--text-bright);border:1px solid var(--border);
+    font-family:var(--mono);font-size:13px;padding:7px 10px;border-radius:3px;
+  }
+  .inline-form input[name="amount"]{width:110px;}
+  .inline-form input[name="note"]{flex:1;min-width:140px;}
+  .inline-form input[name="day_of_month"]{width:110px;}
+  .inline-form button{
+    background:var(--green);color:#06140b;border:none;font-weight:700;
+    font-family:var(--mono);font-size:13px;padding:8px 14px;border-radius:3px;cursor:pointer;
+  }
+  .inline-form button:hover{opacity:.85;}
+
+  .recurring-row{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:8px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;
+  }
+  .recurring-row:last-child{border-bottom:none;}
+  .recurring-row .day{color:var(--text-muted);min-width:70px;}
+  .recurring-row button{
+    background:none;border:1px solid var(--border);color:var(--text-muted);
+    font-family:var(--mono);font-size:11px;border-radius:3px;padding:3px 8px;cursor:pointer;
+  }
+  .recurring-row button:hover{color:var(--red);border-color:var(--red);}
+
   select:focus-visible, button:focus-visible, a:focus-visible{
     outline:2px solid var(--green);
     outline-offset:2px;
@@ -334,6 +360,21 @@
   <!-- top stats -->
   <div class="stat-row" id="statRow"></div>
 
+  <!-- add transaction -->
+  <div class="panel" id="addTxnPanel">
+    <h2>add transaction</h2>
+    <form id="addTxnForm" class="inline-form">
+      <select name="type">
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+      </select>
+      <input name="amount" type="number" step="0.01" placeholder="Amount" required>
+      <select name="category" id="addTxnCategory"></select>
+      <input name="note" type="text" placeholder="Note">
+      <button type="submit">Add</button>
+    </form>
+  </div>
+
   <div class="grid-2">
     <!-- where the money goes -->
     <div class="panel">
@@ -360,6 +401,24 @@
     <h2>month over month</h2>
     <div class="sub">Last 6 months, expense vs income.</div>
     <div id="momChart"></div>
+  </div>
+
+  <!-- recurring -->
+  <div class="panel">
+    <h2>recurring</h2>
+    <div class="sub">Auto-logged on the given day of every month (via a daily cron job).</div>
+    <form id="addRecurringForm" class="inline-form">
+      <select name="type">
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+      </select>
+      <input name="amount" type="number" step="0.01" placeholder="Amount" required>
+      <select name="category" id="addRecurringCategory"></select>
+      <input name="note" type="text" placeholder="Note">
+      <input name="day_of_month" type="number" min="1" max="28" placeholder="Day (1-28)" required>
+      <button type="submit">Add rule</button>
+    </form>
+    <div id="recurringBox" style="margin-top:12px;"></div>
   </div>
 
   <div class="grid-2">
@@ -989,9 +1048,94 @@
     }
   });
 
+  /* ===================== add transaction ===================== */
+  function fillCategorySelect(sel){
+    sel.innerHTML = CAT_ORDER.map(function(c){
+      return '<option value="'+c+'">'+CAT_LABELS[c]+'</option>';
+    }).join('');
+  }
+
+  var addTxnForm = document.getElementById('addTxnForm');
+  if (addTxnForm){
+    fillCategorySelect(document.getElementById('addTxnCategory'));
+    addTxnForm.addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      var fd = new FormData(addTxnForm);
+      await fetch('/api/txn', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          type: fd.get('type'),
+          amount: parseFloat(fd.get('amount')),
+          category: fd.get('category'),
+          note: fd.get('note')
+        })
+      });
+      addTxnForm.reset();
+      refreshAndRerender();
+    });
+  }
+
+  /* ===================== recurring ===================== */
+  async function loadRecurring(){
+    var box = document.getElementById('recurringBox');
+    if (!box || IS_SAMPLE) return;
+    try {
+      var res = await fetch('/api/recurring', {cache: 'no-store'});
+      var payload = await res.json();
+      var rules = payload.rules || [];
+      if (!rules.length){
+        box.innerHTML = '<div class="empty">No recurring rules set.</div>';
+        return;
+      }
+      box.innerHTML = rules.map(function(r){
+        return '<div class="recurring-row">'
+          + '<span class="day">Day '+r.day_of_month+'</span>'
+          + '<span style="flex:1;">'+(CAT_LABELS[r.category]||r.category)+' — '+(r.note||'—')+'</span>'
+          + '<span class="activity-amt'+(r.type==='income'?' income':'')+'">'+(r.type==='income'?'+':'-')+money(r.amount)+'</span>'
+          + '<button type="button" data-id="'+r.id+'">remove</button>'
+          + '</div>';
+      }).join('');
+    } catch (e) { box.innerHTML = '<div class="empty">Couldn\'t load recurring rules.</div>'; }
+  }
+
+  var addRecurringForm = document.getElementById('addRecurringForm');
+  if (addRecurringForm){
+    fillCategorySelect(document.getElementById('addRecurringCategory'));
+    addRecurringForm.addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      var fd = new FormData(addRecurringForm);
+      await fetch('/api/recurring', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          type: fd.get('type'),
+          amount: parseFloat(fd.get('amount')),
+          category: fd.get('category'),
+          note: fd.get('note'),
+          day_of_month: parseInt(fd.get('day_of_month'), 10)
+        })
+      });
+      addRecurringForm.reset();
+      loadRecurring();
+    });
+
+    document.getElementById('recurringBox').addEventListener('click', async function(ev){
+      var btn = ev.target.closest('button[data-id]');
+      if (!btn) return;
+      await fetch('/api/recurring?id='+btn.getAttribute('data-id'), {method:'DELETE'});
+      loadRecurring();
+    });
+  }
+
   /* ===================== boot ===================== */
   resolveColors();
+  if (IS_SAMPLE){
+    if (addTxnForm) addTxnForm.closest('.panel').style.display = 'none';
+    if (addRecurringForm) addRecurringForm.closest('.panel').style.display = 'none';
+  }
   render(defaultMonth);
+  loadRecurring();
 
 })();
 </script>
