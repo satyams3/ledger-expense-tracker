@@ -263,6 +263,35 @@
   .activity-actions button:hover{color:var(--text-bright);border-color:var(--text-muted);}
   .activity-actions button.del:hover{color:var(--red);border-color:var(--red);}
 
+  .activity-edit-row{
+    display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+    padding:10px 0;border-bottom:1px solid var(--border-soft);
+    background:var(--panel-2);border-radius:3px;padding-left:8px;padding-right:8px;
+  }
+  .activity-edit-row input, .activity-edit-row select{
+    background:var(--bg);color:var(--text-bright);border:1px solid var(--border);
+    font-family:var(--mono);font-size:12px;padding:5px 7px;border-radius:3px;
+  }
+  .activity-edit-row input[data-f="amount"]{width:90px;}
+  .activity-edit-row input[data-f="note"]{flex:1;min-width:120px;}
+  .activity-edit-row .save{background:var(--green);color:#06140b;border:none;font-weight:700;}
+  .activity-edit-row button{
+    font-family:var(--mono);font-size:11px;border-radius:3px;padding:5px 10px;cursor:pointer;
+    border:1px solid var(--border);background:none;color:var(--text-muted);
+  }
+  .activity-edit-row button:hover{color:var(--text-bright);border-color:var(--text-muted);}
+  .confirm-del-row{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:10px 8px;border-bottom:1px solid var(--border-soft);
+    background:var(--panel-2);border-radius:3px;font-size:12.5px;
+  }
+  .confirm-del-row button{
+    font-family:var(--mono);font-size:11px;border-radius:3px;padding:5px 10px;cursor:pointer;
+    border:1px solid var(--border);background:none;color:var(--text-muted);
+  }
+  .confirm-del-row button.yes{color:var(--red);border-color:var(--red);}
+  .confirm-del-row button:hover{color:var(--text-bright);}
+
   /* insights */
   .insight-line{
     display:flex;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border-soft);
@@ -779,6 +808,31 @@
       + '&nbsp;&nbsp;<span style="color:var(--red);">■</span> selected month expense</div>';
   }
 
+  var activityAction = null; // {id, mode:'edit'|'delete'} or null — at most one row active
+
+  function renderEditRow(r){
+    var options = CAT_ORDER.map(function(c){
+      return '<option value="'+c+'"'+(c===r.category?' selected':'')+'>'+CAT_LABELS[c]+'</option>';
+    }).join('');
+    return '<div class="activity-edit-row" data-id="'+r.id+'">'
+      + '<input data-f="amount" type="number" step="0.01" value="'+r.amount+'">'
+      + '<select data-f="category">'+options+'</select>'
+      + '<input data-f="note" type="text" value="'+(r.note||'').replace(/"/g,'&quot;')+'" placeholder="note">'
+      + '<button type="button" class="save" data-act="save" data-id="'+r.id+'">Save</button>'
+      + '<button type="button" data-act="cancel">Cancel</button>'
+      + '</div>';
+  }
+
+  function renderConfirmDelRow(r){
+    return '<div class="confirm-del-row" data-id="'+r.id+'">'
+      + '<span>Delete <b>'+(r.note||CAT_LABELS[r.category]||r.category)+'</b> — '+money(r.amount)+'?</span>'
+      + '<span>'
+      + '<button type="button" class="yes" data-act="confirm-del" data-id="'+r.id+'">Delete</button>'
+      + '<button type="button" data-act="cancel">Cancel</button>'
+      + '</span>'
+      + '</div>';
+  }
+
   function renderActivity(rows){
     var box = document.getElementById('activityBox');
     if (!rows.length){ box.innerHTML = '<div class="empty">No transactions logged for this month yet.</div>'; return; }
@@ -787,6 +841,9 @@
     }).slice(0, 10);
 
     var html = sorted.map(function(r){
+      if (activityAction && String(activityAction.id) === String(r.id)){
+        return activityAction.mode === 'edit' ? renderEditRow(r) : renderConfirmDelRow(r);
+      }
       var isIncome = r.type === 'income';
       var dateShort = r.date.slice(5).split('-').reverse().join('/');
       var actions = IS_SAMPLE ? '' :
@@ -894,29 +951,40 @@
   document.getElementById('activityBox').addEventListener('click', async function(ev){
     var btn = ev.target.closest('button[data-act]');
     if (!btn) return;
-    var id = btn.getAttribute('data-id');
-    var row = DATA.find(function(r){ return String(r.id) === id; });
-    if (!row) return;
+    var act = btn.getAttribute('data-act');
 
-    if (btn.getAttribute('data-act') === 'del'){
-      if (!confirm('Delete "'+(row.note||row.category)+'" for '+money(row.amount)+'?')) return;
+    if (act === 'cancel'){
+      activityAction = null;
+      render(picker.value);
+      return;
+    }
+
+    if (act === 'edit' || act === 'del'){
+      activityAction = {id: btn.getAttribute('data-id'), mode: act === 'edit' ? 'edit' : 'delete'};
+      render(picker.value);
+      return;
+    }
+
+    if (act === 'confirm-del'){
+      var id = btn.getAttribute('data-id');
       await fetch('/api/txn?id='+id, {method:'DELETE'});
+      activityAction = null;
       refreshAndRerender();
       return;
     }
 
-    if (btn.getAttribute('data-act') === 'edit'){
-      var newAmount = prompt('Amount', row.amount);
-      if (newAmount === null) return;
-      var newCategory = prompt('Category ('+CAT_ORDER.join(', ')+')', row.category);
-      if (newCategory === null) return;
-      var newNote = prompt('Note', row.note || '');
-      if (newNote === null) return;
+    if (act === 'save'){
+      var id = btn.getAttribute('data-id');
+      var editRow = btn.closest('.activity-edit-row');
+      var amount = parseFloat(editRow.querySelector('[data-f="amount"]').value);
+      var category = editRow.querySelector('[data-f="category"]').value;
+      var note = editRow.querySelector('[data-f="note"]').value;
       await fetch('/api/txn?id='+id, {
         method: 'PATCH',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({amount: parseFloat(newAmount), category: newCategory.trim(), note: newNote})
+        body: JSON.stringify({amount: amount, category: category, note: note})
       });
+      activityAction = null;
       refreshAndRerender();
     }
   });
