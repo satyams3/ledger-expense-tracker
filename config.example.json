@@ -1,0 +1,20 @@
+{
+  "telegram_token": "PASTE_YOUR_BOTFATHER_TOKEN_HERE",
+  "supabase_url": "https://xxxx.supabase.co",
+  "supabase_key": "your-anon-key",
+  "currency": "₹",
+  "monthlyBudget": 40000,
+  "budgets": {
+    "travel": 4000,
+    "food": 6000,
+    "groceries": 5000,
+    "clothes": 3000,
+    "rent": 12000,
+    "bills": 3000,
+    "luxuries": 3000,
+    "investments": 0,
+    "health": 2000,
+    "education": 2000,
+    "other": 2000
+  }
+}

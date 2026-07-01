@@ -1,0 +1,5 @@
+config.json
+data.js
+__pycache__/
+*.pyc
+.claude/
