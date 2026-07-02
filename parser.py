@@ -10,19 +10,35 @@ parser.py — turn a plain-English Telegram message into a transaction dict.
 
 Returns None if no amount could be found in the message.
 
-Everything that's likely to need editing (category keywords, income
-keywords, filler words) lives in plain Python dicts/lists at the top of
-the file — no need to touch the regex logic below to retune behaviour.
+Category keywords and income keywords are read from config.json's
+"category_keywords" / "income_keywords" keys if present, so they can be
+retuned without a code change — see config.example.json for the format.
+If config.json omits them (or is missing), the defaults below are used.
 """
 
+import json
 import re
+from pathlib import Path
+
+_HERE = Path(__file__).parent
+_CONFIG_PATH = _HERE / "config.json"
+if not _CONFIG_PATH.exists():
+    _CONFIG_PATH = _HERE / "config.example.json"
+
+
+def _load_config():
+    try:
+        with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
 
 # --------------------------------------------------------------------------
-# 1. CATEGORY KEYWORDS — edit freely. First match wins; order matters only
-#    if a word appears in two lists (it shouldn't, but if it does the
-#    category listed first in CATEGORY_KEYWORDS takes priority).
+# 1. CATEGORY KEYWORDS (defaults — overridden by config.json if present).
+#    First match wins; order matters only if a word appears in two lists.
 # --------------------------------------------------------------------------
-CATEGORY_KEYWORDS = {
+_DEFAULT_CATEGORY_KEYWORDS = {
     "travel": [
         "ola", "uber", "metro", "petrol", "diesel", "fuel", "cab", "taxi",
         "auto", "rapido", "irctc", "train", "flight", "indigo", "parking",
@@ -97,15 +113,19 @@ CATEGORY_KEYWORDS = {
 DEFAULT_CATEGORY = "other"
 
 # --------------------------------------------------------------------------
-# 2. INCOME KEYWORDS — presence of any of these flips type to "income".
+# 2. INCOME KEYWORDS (defaults) — presence of any flips type to "income".
 # --------------------------------------------------------------------------
-INCOME_KEYWORDS = [
+_DEFAULT_INCOME_KEYWORDS = [
     "salary", "refund", "cashback", "received", "credited", "credit",
     "bonus", "payout", "income", "interest credited", "reimbursement",
     "reimbursed", "got paid", "freelance payment", "dividend", "won",
     "gift received", "borrowed", "loan received", "loan credited",
     "took a loan", "took loan",
 ]
+
+_config = _load_config()
+CATEGORY_KEYWORDS = _config.get("category_keywords") or _DEFAULT_CATEGORY_KEYWORDS
+INCOME_KEYWORDS = _config.get("income_keywords") or _DEFAULT_INCOME_KEYWORDS
 
 # --------------------------------------------------------------------------
 # 3. FILLER WORDS — stripped out of the message when building the note.

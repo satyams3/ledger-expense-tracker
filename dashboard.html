@@ -557,6 +557,15 @@
 
   var CURRENCY = CONFIG.currency || '₹';
 
+  var INSIGHTS_CFG = Object.assign({
+    discretionaryCategories: ['food','luxuries','clothes'],
+    discretionaryWarnPct: 40,
+    discretionaryNeutralPct: 25,
+    momWarnPct: 10,
+    momGoodPct: -5,
+    burnAmberPct: 85
+  }, CONFIG.insights || {});
+
   var CAT_LABELS = {
     travel:'Travel', food:'Food', groceries:'Groceries', clothes:'Clothes',
     rent:'Rent', bills:'Bills', luxuries:'Luxuries', subscriptions:'Subscriptions',
@@ -671,7 +680,7 @@
   function pct(spent, budget){ return budget > 0 ? Math.min(spent/budget, 1) : 0; }
   function barColor(frac){
     if (frac >= 1) return 'var(--red)';
-    if (frac >= 0.85) return 'var(--amber)';
+    if (frac >= INSIGHTS_CFG.burnAmberPct/100) return 'var(--amber)';
     return 'var(--green)';
   }
 
@@ -978,11 +987,11 @@
     }
 
     // 2. discretionary load
-    var discCats = ['food','luxuries','clothes'];
+    var discCats = INSIGHTS_CFG.discretionaryCategories;
     var discTotal = discCats.reduce(function(a,c){ return a + (totalsByCat[c]||0); }, 0);
     var discPct = totalSpent > 0 ? (discTotal/totalSpent*100) : 0;
-    var discClass = discPct > 40 ? 'warn' : (discPct > 25 ? '' : 'good');
-    lines.push({cls:'', html: 'Discretionary spend (food + luxuries + clothes) is <span class="'+discClass+'">'+money(discTotal)+'</span>, or <b>'+discPct.toFixed(0)+'%</b> of this month\'s total.'});
+    var discClass = discPct > INSIGHTS_CFG.discretionaryWarnPct ? 'warn' : (discPct > INSIGHTS_CFG.discretionaryNeutralPct ? '' : 'good');
+    lines.push({cls:'', html: 'Discretionary spend ('+discCats.map(function(c){return CAT_LABELS[c]||c;}).join(' + ')+') is <span class="'+discClass+'">'+money(discTotal)+'</span>, or <b>'+discPct.toFixed(0)+'%</b> of this month\'s total.'});
 
     // 3. food order frequency
     var foodCount = exp.filter(function(r){ return r.category === 'food'; }).length;
@@ -1006,7 +1015,7 @@
     if (prevExp > 0){
       var change = ((totalSpent - prevExp)/prevExp)*100;
       var dir = change >= 0 ? 'up' : 'down';
-      var cls = change > 10 ? 'warn' : (change < -5 ? 'good' : '');
+      var cls = change > INSIGHTS_CFG.momWarnPct ? 'warn' : (change < INSIGHTS_CFG.momGoodPct ? 'good' : '');
       lines.push({cls:'', html: 'Spending is <span class="'+cls+'">'+dir+' '+Math.abs(change).toFixed(0)+'%</span> vs '+monthLabel(prevYm)+' ('+money(prevExp)+').'});
     }
 

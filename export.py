@@ -64,6 +64,7 @@ def run_export(db_path=None, out_path=None):
         "currency": config.get("currency", "₹"),
         "monthlyBudget": config.get("monthlyBudget", 0),
         "budgets": config.get("budgets", {}),
+        "insights": config.get("insights", {}),
     }
 
     js = (

@@ -52,6 +52,7 @@ class handler(BaseHTTPRequestHandler):
                 "currency": config.get("currency", "₹"),
                 "monthlyBudget": config.get("monthlyBudget", 0),
                 "budgets": config.get("budgets", {}),
+                "insights": config.get("insights", {}),
             },
         }
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")

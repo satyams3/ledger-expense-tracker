@@ -22,5 +22,34 @@
     "personal_care": 1000,
     "gifts": 1000,
     "other": 2000
+  },
+  "category_keywords": {
+    "travel": ["ola", "uber", "metro", "petrol", "diesel", "fuel", "cab", "taxi", "auto", "rapido", "irctc", "train", "flight", "indigo", "parking", "toll", "fastag", "bus", "rickshaw", "bike taxi"],
+    "food": ["swiggy", "zomato", "chai", "coffee", "lunch", "dinner", "breakfast", "restaurant", "cafe", "tea", "snack", "food", "dominos", "pizza", "starbucks", "dhaba", "biryani", "eatsure", "ccd"],
+    "groceries": ["blinkit", "zepto", "instamart", "bigbasket", "grocery", "groceries", "dmart", "vegetables", "sabzi", "milk", "kirana", "supermarket"],
+    "clothes": ["myntra", "ajio", "shirt", "tshirt", "t-shirt", "jeans", "shoes", "clothes", "clothing", "footwear", "zara", "h&m", "uniqlo", "apparel", "dress", "kurta", "sneakers"],
+    "rent": ["rent", "landlord", "lease", "maintenance", "society maintenance", "pg fee", "hostel fee"],
+    "bills": ["electricity", "wifi", "broadband", "recharge", "mobile bill", "phone bill", "gas bill", "water bill", "dth", "jio", "airtel", "vi bill", "bill"],
+    "luxuries": ["vacation", "trip", "shopping spree", "gadget"],
+    "subscriptions": ["netflix", "prime video", "hotstar", "spotify", "gym", "gym membership", "apple music", "youtube premium", "icloud", "google one", "jio cinema", "subscription"],
+    "entertainment": ["movie", "pvr", "inox", "bookmyshow", "concert", "party", "club", "bar", "alcohol", "beer", "wine", "cigarette", "gaming"],
+    "insurance": ["insurance", "insurance premium", "lic", "policy premium"],
+    "emi": ["emi", "loan", "personal loan", "home loan", "car loan", "credit card bill"],
+    "investments": ["sip", "etf", "stocks", "mutual fund", "mf", "nps", "ppf", "fd", "fixed deposit", "rd", "gold", "crypto", "bitcoin", "zerodha", "groww", "upstox", "invest"],
+    "health": ["doctor", "medicine", "pharmacy", "hospital", "clinic", "medical", "apollo", "pharmeasy", "1mg", "checkup", "dentist", "health", "lab test", "physio"],
+    "education": ["course", "udemy", "coursera", "tuition", "fees", "books", "exam", "school", "college", "education", "class", "workshop"],
+    "personal_care": ["salon", "haircut", "spa", "parlour", "parlor", "cosmetics", "skincare", "makeup", "grooming"],
+    "gifts": ["gift", "gifting", "present", "donation", "charity"]
+  },
+  "income_keywords": [
+    "salary", "refund", "cashback", "received", "credited", "credit", "bonus", "payout", "income", "interest credited", "reimbursement", "reimbursed", "got paid", "freelance payment", "dividend", "won", "gift received", "borrowed", "loan received", "loan credited", "took a loan", "took loan"
+  ],
+  "insights": {
+    "discretionaryCategories": ["food", "luxuries", "clothes"],
+    "discretionaryWarnPct": 40,
+    "discretionaryNeutralPct": 25,
+    "momWarnPct": 10,
+    "momGoodPct": -5,
+    "burnAmberPct": 85
   }
 }
