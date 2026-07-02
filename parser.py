@@ -103,7 +103,8 @@ INCOME_KEYWORDS = [
     "salary", "refund", "cashback", "received", "credited", "credit",
     "bonus", "payout", "income", "interest credited", "reimbursement",
     "reimbursed", "got paid", "freelance payment", "dividend", "won",
-    "gift received",
+    "gift received", "borrowed", "loan received", "loan credited",
+    "took a loan", "took loan",
 ]
 
 # --------------------------------------------------------------------------
