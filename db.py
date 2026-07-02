@@ -70,7 +70,58 @@ def add(amount, category, note, type="expense", chat_id=None,
         "chat_id": chat_id,
         "created_at": created_at,
     }).execute()
+    if category == "emi" and type == "expense":
+        _apply_emi_to_loan(note, amount)
     return result.data[0]["id"]
+
+
+def _apply_emi_to_loan(note, amount):
+    """Best-effort: if an emi txn's note mentions an active loan by name,
+    reduce that loan's remaining balance. Silently does nothing if no
+    loan matches — the txn is still logged either way.
+    """
+    note_lower = (note or "").lower()
+    if not note_lower:
+        return
+    for loan in list_loans():
+        if loan["name"].lower() in note_lower:
+            new_remaining = max(0, loan["remaining"] - amount)
+            client = _get_client()
+            client.table("loans").update({
+                "remaining": new_remaining,
+                "active": new_remaining > 0,
+            }).eq("id", loan["id"]).execute()
+            break
+
+
+def add_loan(name, principal, emi_amount=None, chat_id=None):
+    """Register a new loan. Returns the new loan's id."""
+    client = _get_client()
+    result = client.table("loans").insert({
+        "name": name,
+        "principal": principal,
+        "remaining": principal,
+        "emi_amount": emi_amount,
+        "chat_id": chat_id,
+        "active": True,
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+    }).execute()
+    return result.data[0]["id"]
+
+
+def list_loans(include_closed=False):
+    """All loans, active ones first (or all, if include_closed)."""
+    client = _get_client()
+    query = client.table("loans").select("*")
+    if not include_closed:
+        query = query.eq("active", True)
+    result = query.order("created_at").execute()
+    return result.data
+
+
+def delete_loan(loan_id):
+    client = _get_client()
+    client.table("loans").delete().eq("id", loan_id).execute()
 
 
 def update(txn_id, db_path=None, **fields):

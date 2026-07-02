@@ -146,6 +146,18 @@
   }
   .recurring-row button:hover{color:var(--red);border-color:var(--red);}
 
+  .loan-row{padding:10px 0;border-bottom:1px solid var(--border-soft);}
+  .loan-row:last-child{border-bottom:none;}
+  .loan-row .top{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-bottom:6px;}
+  .loan-row .name{color:var(--text-bright);font-weight:600;}
+  .loan-row .amt{color:var(--text-muted);font-variant-numeric:tabular-nums;}
+  .loan-row .amt.paid{color:var(--green);}
+  .loan-row button{
+    background:none;border:1px solid var(--border);color:var(--text-muted);
+    font-family:var(--mono);font-size:11px;border-radius:3px;padding:3px 8px;cursor:pointer;margin-left:8px;
+  }
+  .loan-row button:hover{color:var(--red);border-color:var(--red);}
+
   select:focus-visible, button:focus-visible, a:focus-visible{
     outline:2px solid var(--green);
     outline-offset:2px;
@@ -425,6 +437,19 @@
       <button type="submit">Add rule</button>
     </form>
     <div id="recurringBox" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- loans -->
+  <div class="panel">
+    <h2>loans</h2>
+    <div class="sub">Tag an EMI with the loan's name in the message (e.g. "car loan emi 8000") and its balance drops automatically.</div>
+    <form id="addLoanForm" class="inline-form">
+      <input name="name" type="text" placeholder="Loan name (e.g. Car Loan)" required>
+      <input name="principal" type="number" step="0.01" placeholder="Principal" required>
+      <input name="emi_amount" type="number" step="0.01" placeholder="EMI amount (optional)">
+      <button type="submit">Add loan</button>
+    </form>
+    <div id="loansBox" style="margin-top:12px;"></div>
   </div>
 
   <div class="grid-2">
@@ -1138,14 +1163,71 @@
     });
   }
 
+  /* ===================== loans ===================== */
+  async function loadLoans(){
+    var box = document.getElementById('loansBox');
+    if (!box || IS_SAMPLE) return;
+    try {
+      var res = await fetch('/api/loans', {cache: 'no-store'});
+      var payload = await res.json();
+      var loans = payload.loans || [];
+      if (!loans.length){
+        box.innerHTML = '<div class="empty">No loans tracked.</div>';
+        return;
+      }
+      box.innerHTML = loans.map(function(l){
+        var frac = l.principal > 0 ? Math.min((l.principal - l.remaining) / l.principal, 1) : 0;
+        var paidOff = l.remaining <= 0;
+        return '<div class="loan-row">'
+          + '<div class="top">'
+          + '<span class="name">'+l.name+'</span>'
+          + '<span>'
+          + '<span class="amt'+(paidOff?' paid':'')+'">'+(paidOff ? 'Paid off' : money(l.remaining)+' left of '+money(l.principal))+'</span>'
+          + '<button type="button" data-id="'+l.id+'">remove</button>'
+          + '</span>'
+          + '</div>'
+          + '<div class="budget-track"><div class="budget-fill" style="width:'+(frac*100)+'%;background:'+(paidOff?'var(--green)':'var(--teal)')+';"></div></div>'
+          + '</div>';
+      }).join('');
+    } catch (e) { box.innerHTML = '<div class="empty">Couldn\'t load loans.</div>'; }
+  }
+
+  var addLoanForm = document.getElementById('addLoanForm');
+  if (addLoanForm){
+    addLoanForm.addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      var fd = new FormData(addLoanForm);
+      await fetch('/api/loans', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          name: fd.get('name'),
+          principal: parseFloat(fd.get('principal')),
+          emi_amount: fd.get('emi_amount') ? parseFloat(fd.get('emi_amount')) : null
+        })
+      });
+      addLoanForm.reset();
+      loadLoans();
+    });
+
+    document.getElementById('loansBox').addEventListener('click', async function(ev){
+      var btn = ev.target.closest('button[data-id]');
+      if (!btn) return;
+      await fetch('/api/loans?id='+btn.getAttribute('data-id'), {method:'DELETE'});
+      loadLoans();
+    });
+  }
+
   /* ===================== boot ===================== */
   resolveColors();
   if (IS_SAMPLE){
     if (addTxnForm) addTxnForm.closest('.panel').style.display = 'none';
     if (addRecurringForm) addRecurringForm.closest('.panel').style.display = 'none';
+    if (addLoanForm) addLoanForm.closest('.panel').style.display = 'none';
   }
   render(defaultMonth);
   loadRecurring();
+  loadLoans();
 
 })();
 </script>
